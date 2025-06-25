@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Ассистент</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #141414;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background: #141414;
+            color: white;
+            padding: 5px 20px;
+            text-align: center;
+        }
+        .typing-indicator {
+            font-style: italic;
+            color: #767676;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        header h1 {
+            font-size: 18px;
+            margin: 0;
+        }
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .tab {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        .tab.active {
+            display: flex;
+        }
+
+        /* === Улучшенный стиль для chat-box === */
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 2px solid #555558;
+            background-color: #1B1B1B;
+            border-radius: 12px;
+            box-shadow: 0 0 5px rgba(85, 85, 88, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        /* === Улучшенный стиль для сообщений === */
+        .msg {
+            padding: 12px 15px;
+            max-width: 80%;
+            position: relative;
+            word-wrap: break-word;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: #2a2a2a;
+            border-bottom-right-radius: 4px;
+            animation: slideFromRight 0.3s ease;
+        }
+
+        .msg.assistant {
+            align-self: flex-start;
+            background: #2a2a2a;
+            border-bottom-left-radius: 4px;
+            animation: slideFromLeft 0.3s ease;
+        }
+
+        @keyframes slideFromRight {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideFromLeft {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .time {
+            font-size: 0.65em;
+            color: #999;
+            position: absolute;
+            bottom: -12px;
+            right: 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: #141414;
+            border-top: 1px solid #555558;
+            position: sticky;
+            bottom: 0;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #555558;
+            background: #141414;
+            color: white;
+        }
+
+        button.ask-btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #1B1B1B;
+            padding: 10px 0;
+            position: sticky;
+            bottom: 0;
+            z-index: 1000;
+        }
+
+        nav a {
+            color: #767676;
+            text-align: center;
+            flex: 1;
+            text-decoration: none;
+        }
+
+        nav img {
+            width: 24px;
+            height: 24px;
+            display: block;
+            margin: 0 auto 4px;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .history-list li {
+            background: #1B1B1B;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #555558;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-btn {
+            color: red;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .profile-container {
+            position: relative;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #1B1B1B;
+            color: #767676;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .avatar-container {
+            margin: 20px auto;
+        }
+
+        .avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .username {
+            margin-top: 10px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .user-stats {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555558;
+        }
+
+        .detailed-stats {
+            margin-top: 20px;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+
+        .stat-label {
+            color: #999999;
+        }
+
+        .stat-value {
+            color: white;
+        }
+
+        .stats-chart {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chart-bar {
+            height: 20px;
+            background: #007bff;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .chart-label {
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #888888;
+        }
+
+        .settings-menu {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: #1B1B1B;
+            transition: bottom 0.3s ease;
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .settings-menu.active {
+            bottom: 0;
+        }
+
+        .settings-content {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .close-btn {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+            color: #767676;
+        }
+
+        .setting-item {
+            margin: 15px 0;
+        }
+
+        .support-btn {
+            background: #1B1B1B;
+            color: #767676;
+            padding: 10px 20px;
+            border: 1px solid #555558;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .reset-btn {
+            background: red;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #cc0000;
+        }
+
+        body.settings-open {
+            filter: blur(5px);
+            pointer-events: none;
+        }
+
+        .copy-btn {
+            margin-left: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Telegram WebApp API -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<header>
+    <h1>AI Ассистент</h1>
+</header>
+
+<main>
+    <!-- Tab: ИИ -->
+    <div class="tab active" id="ai">
+        <div class="chat-box" id="chat-box"></div>
+        <div class="input-group">
+            <input type="text" id="question-input" placeholder="Задайте вопрос...">
+            <button class="ask-btn" onclick="askQuestion()">Спросить</button>
+        </div>
+    </div>
+
+    <!-- Tab: История -->
+    <div class="tab" id="history">
+        <h3>История диалогов</h3>
+        <ul class="history-list" id="history-list"></ul>
+        <button class="ask-btn" style="width:100%" onclick="createNewDialog()">Создать новый диалог</button>
+    </div>
+
+    <!-- Tab: Профиль -->
+    <div class="tab" id="profile">
+        <div class="profile-container">
+            <!-- Кнопка шестерёнки -->
+            <button class="settings-btn" onclick="toggleSettings()">&#9881;</button>
+            <!-- Аватарка -->
+            <div class="avatar-container">
+                <img src="" alt="Аватар" class="avatar" id="profile-avatar">
+            </div>
+            <!-- Имя пользователя -->
+            <h2 class="username" id="profile-name">Загрузка...</h2>
+            <!-- Статистика -->
+            <div class="user-stats" id="user-stats">Статистика: 0 вопросов • Последний: никогда • Среднее время: 0 мс</div>
+            <!-- Детальная статистика -->
+            <div class="detailed-stats">
+                <h4 style="margin: 0 0 10px 0;">Детальная статистика</h4>
+                <div class="stat-row"><span class="stat-label">Всего вопросов:</span><span class="stat-value" id="total-questions">0</span></div>
+                <div class="stat-row"><span class="stat-label">Всего диалогов:</span><span class="stat-value" id="total-dialogs">0</span></div>
+                <div class="stat-row"><span class="stat-label">Символов (вопросы):</span><span class="stat-value" id="total-chars">0</span></div>
+                <div class="stat-row"><span class="stat-label">Символов (ответы):</span><span class="stat-value" id="total-answer-chars">0</span></div>
+                <div class="stat-row"><span class="stat-label">Среднее время:</span><span class="stat-value" id="avg-time">0 мс</span></div>
+                <div class="stat-row"><span class="stat-label">Самый длинный:</span><span class="stat-value" id="longest-answer">0</span></div>
+                <div class="stat-row"><span class="stat-label">Самый короткий:</span><span class="stat-value" id="shortest-answer">0</span></div>
+                <div class="stat-row"><span class="stat-label">Популярный вопрос:</span><span class="stat-value" id="popular-question">-</span></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<nav>
+    <a href="#" onclick="showTab('ai')"><img src="/static/icons/ai.png" alt="ИИ">ИИ</a>
+    <a href="#" onclick="showTab('history')"><img src="/static/icons/history.png" alt="История">История</a>
+    <a href="#" onclick="showTab('profile')"><img src="/static/icons/profile.png" alt="Профиль">Профиль</a>
+</nav>
+
+<div class="settings-menu" id="settingsMenu">
+    <div class="settings-content">
+        <span class="close-btn" onclick="toggleSettings()">&times;</span>
+        <h3 style="color: white;">Настройки</h3>
+        <div class="setting-item">
+            <label style="color: white;">Темная тема</label>
+            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" checked>
+        </div>
+        <div class="setting-item">
+            <button class="support-btn" onclick="contactSupport()">Связаться с поддержкой</button>
+        </div>
+        <div class="setting-item">
+            <button class="reset-btn" onclick="resetStats()">Сбросить статистику</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentDialog = [];
+
+    function showTab(tabId) {
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'history') loadHistory();
+        if (tabId === 'profile') updateProfile();
+    }
+
+    async function askQuestion() {
+        const input = document.getElementById('question-input');
+        const question = input.value.trim();
+        if (!question) return;
+
+        input.value = '';
+        const chatBox = document.getElementById('chat-box');
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const fullTime = new Date().toLocaleString('ru', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).replace(/\//g, '.').replace(',', '');
+
+        // Сообщение пользователя
+        chatBox.innerHTML += `<div class="msg user">${question}<div class="time">${time}</div></div>`;
+        currentDialog.push({ role: 'user', content: question, timestamp: fullTime });
+
+        // Индикатор загрузки
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'msg assistant typing-indicator';
+        typingIndicator.id = 'typing-indicator';
+        typingIndicator.innerHTML = `ИИ думает...<div class="time">${time}</div>`;
+        chatBox.appendChild(typingIndicator);
+
+        try {
+            const startTime = Date.now();
+            const res = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({ question })
+            });
+
+            if (!res.ok) throw new Error("HTTP ошибка");
+
+            const data = await res.json();
+
+            // Удаление индикатора
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+
+            // Ответ ИИ
+            const processedAnswer = parseBoldText(data.answer);
+            chatBox.innerHTML += `<div class="msg assistant">${processedAnswer}<div class="time">${data.timestamp}</div><span class="copy-btn" onclick='copyToClipboard(${JSON.stringify(data.answer)})'>📋</span></div>`;
+            currentDialog.push({ role: 'assistant', content: data.answer, timestamp: data.timestamp });
+
+            // Обновление статистики
+            updateStats({
+                answerTime: data.time || 1000,
+                questionLength: question.length,
+                answerLength: data.answer.length,
+                questionText: question
+            });
+        } catch (error) {
+            console.error("Ошибка при получении ответа:", error);
+
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+
+            chatBox.innerHTML += `<div class="msg assistant">Не удалось получить ответ<div class="time">${time}</div></div>`;
+        }
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function parseBoldText(text) {
+        return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    function createNewDialog() {
+        if (currentDialog.length > 0) {
+            const history = JSON.parse(localStorage.getItem('dialogs') || '[]');
+            history.push(currentDialog);
+            localStorage.setItem('dialogs', JSON.stringify(history));
+            currentDialog = [];
+            document.getElementById('chat-box').innerHTML = '';
+        }
+        showTab('ai');
+    }
+
+    function loadHistory() {
+        const history = JSON.parse(localStorage.getItem('dialogs') || '[]');
+        const historyList = document.getElementById('history-list');
+        historyList.innerHTML = '';
+        history.forEach((dialog, index) => {
+            const lastQuestion = dialog.find(m => m.role === 'user')?.content || 'Без названия';
+            const dateStr = dialog[0]?.timestamp || '--.-- --:--';
+            historyList.innerHTML += `
+                <li onclick="restoreDialog(${index})" data-dialog='${JSON.stringify(dialog)}'>
+                    <span><strong>${lastQuestion}</strong><br><small>${dateStr}</small></span>
+                    <span class="delete-btn" onclick="deleteDialog(${index}, event)">✖</span>
+                </li>`;
+        });
+    }
+
+    function deleteDialog(index, e) {
+        e.stopPropagation();
+        if (!confirm("Удалить диалог?")) return;
+        const history = JSON.parse(localStorage.getItem('dialogs') || '[]');
+        history.splice(index, 1);
+        localStorage.setItem('dialogs', JSON.stringify(history));
+        loadHistory();
+    }
+
+    function restoreDialog(index) {
+        const historyList = document.getElementById('history-list');
+        const dialog = JSON.parse(historyList.children[index].dataset.dialog);
+        currentDialog = [...dialog];
+        const chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML = '';
+        dialog.forEach(msg => {
+            const cls = msg.role === 'user' ? 'user' : 'assistant';
+            chatBox.innerHTML += `<div class="msg ${cls}">${msg.content}<div class="time">${msg.timestamp || '--:--'}</div></div>`;
+        });
+        showTab('ai');
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(() => alert('Скопировано'))
+            .catch(err => alert('Ошибка копирования: ' + err));
+    }
+
+    function toggleSettings() {
+        const menu = document.getElementById('settingsMenu');
+        const overlay = document.getElementById('overlay');
+        menu.classList.toggle('active');
+        overlay.style.display = menu.classList.contains('active') ? 'block' : 'none';
+    }
+
+    function contactSupport() {
+        window.location.href = 'https://t.me/Futher2719';
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+
+    function initTelegramData() {
+        try {
+            const tg = window.Telegram.WebApp;
+            const initData = tg.initDataUnsafe;
+            if (initData && initData.user) {
+                const user = initData.user;
+                const avatar = user.photo_url || 'https://via.placeholder.com/150';
+                localStorage.setItem('telegram_user', JSON.stringify({
+                    id: user.id,
+                    first_name: user.first_name,
+                    last_name: user.last_name || '',
+                    avatar: avatar
+                }));
+            }
+        } catch (e) {
+            console.warn("Telegram WebApp не доступен.");
+        }
+    }
+
+    function updateProfile() {
+        const savedUser = JSON.parse(localStorage.getItem('telegram_user')) || {};
+        const avatarElement = document.getElementById('profile-avatar');
+        const nameElement = document.getElementById('profile-name');
+
+        if (savedUser.avatar && avatarElement) {
+            avatarElement.src = savedUser.avatar;
+        } else {
+            avatarElement.src = 'https://via.placeholder.com/150';
+        }
+
+        if (nameElement) {
+            nameElement.textContent = `${savedUser.first_name || 'Неизвестный'} ${savedUser.last_name || ''}`;
+        }
+
+        const stats = JSON.parse(localStorage.getItem('user_stats')) || {
+            totalQuestions: 0,
+            avgTime: 0,
+            longestAnswer: 0,
+            shortestAnswer: 0,
+            popularQuestion: {},
+            dialogCount: 0
+        };
+
+        document.getElementById('user-stats').textContent = `Статистика: ${stats.totalQuestions} вопросов • Последний: никогда • Среднее время: ${stats.avgTime} мс`;
+        document.getElementById('total-questions').textContent = stats.totalQuestions;
+        document.getElementById('total-dialogs').textContent = stats.dialogCount;
+        document.getElementById('total-chars').textContent = stats.totalChars || 0;
+        document.getElementById('total-answer-chars').textContent = stats.totalAnswerChars || 0;
+        document.getElementById('avg-time').textContent = stats.avgTime + ' мс';
+        document.getElementById('longest-answer').textContent = stats.longestAnswer || 0;
+        document.getElementById('shortest-answer').textContent = stats.shortestAnswer || 0;
+        document.getElementById('popular-question').textContent = Object.keys(stats.popularQuestion)[0] || '-';
+    }
+
+    function updateStats({ answerTime, questionLength, answerLength, questionText }) {
+        const stats = JSON.parse(localStorage.getItem('user_stats')) || {
+            totalQuestions: 0,
+            totalTime: 0,
+            count: 0,
+            avgTime: 0,
+            totalChars: 0,
+            totalAnswerChars: 0,
+            longestAnswer: 0,
+            shortestAnswer: Infinity,
+            popularQuestion: {},
+            dialogCount: 0
+        };
+        stats.totalQuestions += 1;
+        stats.totalTime += answerTime;
+        stats.count += 1;
+        stats.avgTime = Math.round(stats.totalTime / stats.count);
+        stats.totalChars += questionLength;
+        stats.totalAnswerChars += answerLength;
+        stats.dialogCount += 1;
+
+        if (answerLength > stats.longestAnswer) stats.longestAnswer = answerLength;
+        if (answerLength < stats.shortestAnswer && answerLength > 0) stats.shortestAnswer = answerLength;
+
+        const key = questionText.toLowerCase().trim();
+        stats.popularQuestion[key] = (stats.popularQuestion[key] || 0) + 1;
+
+        localStorage.setItem('user_stats', JSON.stringify(stats));
+        updateProfile();
+    }
+
+    window.onload = () => {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        initTelegramData();
+        updateProfile();
+        showTab('ai');
+    };
+</script>
+
+<!-- Затемнение фона при открытии меню -->
+<div id="overlay" class="overlay" onclick="toggleSettings()"></div>
+
+</body>
+</html>
